@@ -24,21 +24,22 @@ public class PawnPlacement : MonoBehaviour
   
 void PlaceObjects(GameObject pawn, Vector3 start, List<(int, int)> array)
 {
-    Debug.Log("Start Position: " + start);
     foreach (var singleElement in array)
     {
-        Vector3 output = start;
-        Debug.Log("Before Rotation: " + output);
+        // Calculate angle in degrees and convert to radians
+        float angle = 360f / 12 * singleElement.Item1;
+        float radians = angle * Mathf.Deg2Rad;
 
-        // Ensure pawnbox is assigned
+        Vector3 output = start;
+
         if (pawnbox != null)
         {
-            // Calculate rotation around pawnbox
-            float angle = 360f / 12 * singleElement.Item1; // Adjust angle for element
-            Quaternion rotation = Quaternion.AngleAxis(angle, pawnbox.transform.up); // Rotation Quaternion
-            Vector3 direction = output - pawnbox.transform.position; // Vector from pivot
-            Vector3 rotatedDirection = rotation * direction; // Apply rotation
-            output = pawnbox.transform.position + rotatedDirection; // Get new position
+            // Calculate position on the cylinder surface
+            float NewX = start.x * Mathf.Cos(radians) - start.z * Mathf.Sin(radians);
+            float NewZ = start.x * Mathf.Sin(radians) + start.z * Mathf.Cos(radians);
+
+            output.x = NewX;
+            output.z = NewZ;
         }
         else
         {
@@ -46,19 +47,31 @@ void PlaceObjects(GameObject pawn, Vector3 start, List<(int, int)> array)
         }
 
         // Adjust y-coordinate based on the current element
-        output.y = start.y + singleElement.Item2;
+        output.y = start.y + (singleElement.Item2*2f);
 
-        Debug.Log("After Rotation: " + output);
+        // Calculate the normal direction at this position (pointing outward from the cylinder)
+        Vector3 normalDirection = new Vector3(output.x, 0, output.z).normalized;
 
-        // Instantiate the object
-        Instantiate(pawn, output, Quaternion.identity);
+        // Create a rotation where the forward vector points outward (normalDirection)
+        Quaternion rotation = Quaternion.LookRotation(normalDirection, Vector3.up);
+
+        // Instantiate the object with correct position and orientation
+        GameObject gg = Instantiate(pawnbox, output, rotation);
+        GameObject parent= gg.transform.GetChild(0).gameObject;
+        parent.transform.Rotate(0,90f,90f);
+        //Debug.Log(parent.name);
+            
     }
 }
 
     // Start is called before the first frame update
     void Start()
     {
-       PlaceObjects(pawn,ReferenceObject.transform.position,pairs); 
+        Debug.Log((float)ReferenceObject.transform.localScale.x/2);
+       // Instantiate(pawn,new Vector3((float)ReferenceObject.transform.localScale.x /2, (float)ReferenceObject.transform.localScale.y ,
+         //       (float)0),Quaternion.identity);
+        Vector3 StartingPostion = new Vector3((float)ReferenceObject.transform.localScale.x/2,(float)-ReferenceObject.transform.localScale.y,(float)0);
+       PlaceObjects(pawn,StartingPostion,pairs); 
     }
 
     // Update is called once per frame
